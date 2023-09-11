@@ -9,10 +9,12 @@ def xy_split(df):
     
 
 #function applies one hot encoding to categorical feature and drops repetitave features
-def dummies(df, df2):
+def dummies(train, val, test):
     
-    df = pd.get_dummies(df)
+    train = pd.get_dummies(train)
     
-    df2 = pd.get_dummies(df2)
+    val = pd.get_dummies(val)
     
-    return df, df2
+    test = pd.get_dummies(test)
+    
+    return train, val, test
