@@ -1,16 +1,18 @@
-import numpy as np
 import pandas as pd
-import os
-import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 
-from env import get_connection
-from sklearn.preprocessing import MinMaxScaler, StandardScaler, RobustScaler
+
 from sklearn.model_selection import train_test_split
+from env import get_connection
 
 
 
 def get_zillow():
+    '''
+    This function aquires the appropriate data for the project from MySQL. All you have to do is assign the function to a variable to read in the data.
+    ex: df = get_zillow
+    '''
     
     filename = 'new_zillow.csv'
     
@@ -40,10 +42,14 @@ def get_zillow():
         df.to_csv(filename, index = 0)
         
         return df
-
-
+    
+    
     
 def clean_zillow():
+    '''
+    This function calls the get_zillow() function and prepares the data for training. All you have to do is assign this function to a variable to acquire the prepped data.
+    ex: df = clean_zillow()
+    '''
     
     df = get_zillow()
     
@@ -56,17 +62,15 @@ def clean_zillow():
     #drop nulls
     df = df.dropna()
     
-    
     #drop duplicates
     df = df.drop_duplicates(subset=['square_ft', 'year', 'tax_amount', 'county',
-                                    'transaction_date', 'tax_value', 'bedrooms', 'bathrooms'], keep = 'first')
-    
+                                    'transaction_date', 'tax_value', 'bedrooms', 'bathrooms'], keep = 'first') 
     #drop 0 values for bedrooms and bathrooms
     df = df[df.bedrooms != 0]
     
     df = df[df.bathrooms != 0]
    
-    #drop tax_amount
+    #drop tax_amount and other insignificant features
     df = df.drop(columns = ['tax_amount', 'property_type', 'transaction_date'])
     
     #cast to int
@@ -78,57 +82,73 @@ def clean_zillow():
     
     df.bedrooms = df.bedrooms.astype('int')
     
-    
-    
     #rename fips column and values
     df['county'] = df['county'].map({6037: 'Los Angeles', 6059: 'Orange', 6111: 'Ventura'})
- 
     
     return df
 
 
 
-def scale_data(train, val, test, to_scale):
-    #make copies for scaling
-    train_scaled = train.copy()
-    validate_scaled = val.copy()
-    test_scaled = test.copy()
-
-    #make the thing
-    scaler = MinMaxScaler()
-
-    #fit the thing
-    scaler.fit(train[to_scale])
-
-    #use the thing
-    train_scaled[to_scale] = scaler.transform(train[to_scale])
-    validate_scaled[to_scale] = scaler.transform(val[to_scale])
-    test_scaled[to_scale] = scaler.transform(test[to_scale])
-    
-    return train_scaled, validate_scaled, test_scaled
-
-
-
 def split_data(df):
+    '''
+    This function uses your dataframe and calls the train_test_split function from sklearn and assigns the output to the train, validate, and test subsets.
 
+    Parameters: 
+    df = data
+    '''
     seed = 42
 
     train, val_test = train_test_split(df, train_size = .7,
                                         random_state = seed)
-
     val, test = train_test_split(val_test, train_size = .5,
                                 random_state = seed)
-
     return train, val, test
 
 
 
-def r_scaler(df, features):
+def bin_data(df):
+    '''
+    This function bins specific continuous features and creates new columns for them. This will be useful when creating visuals.
+    
+    Parameters:
+    df = data
+    '''
+    
+    #bin data
+    bin_bound = [0, 1.9, 2.9, 3.9, 4.9, 5.9, 18]
 
-    rs = RobustScaler()
+    bin_labels = [1, 2, 3, 4, 5, 18]
 
-    rs.fit(df[features])
+    df['bathrooms_bin'] = pd.cut(df['bathrooms'], bins = bin_bound, labels = bin_labels)
+     
+    
+    bin_bound = [0, 1.9, 2.9, 3.9, 4.9, 5.9, 6.9, 14]
 
-    df[['bedrooms_rs','bathrooms_rs','square_ft_rs','tax_value_rs','year_rs','tax_amount_rs']] = rs.transform(df[features])
+    bin_labels = [1, 2, 3, 4, 5, 6, 14]
 
+    df['bedrooms_bin'] = pd.cut(df['bedrooms'], bins = bin_bound, labels = bin_labels)
+
+    
+    bin_bound = [0, 1000, 1500, 2000, 2500, 3000, 3500, 21929]
+
+    bin_labels = [1000, 1500, 2000, 2500, 3000, 3500, 21929]
+
+    df['square_ft_bin'] = pd.cut(df['square_ft'], bins = bin_bound, labels = bin_labels)
+   
+    
+    bin_bound = [0, 1959, 1969, 1979, 1989, 1999, 2009, 2020 ]
+
+    bin_labels = [1950, 1960, 1970, 1980, 1990, 2000, 2010]
+
+    df['decade'] = pd.cut(df['year'], bins = bin_bound, labels = bin_labels)
+    
+    #create column
+    df['total_rooms'] = df.bedrooms + df.bathrooms
+    
+    bin_bound = [0, 3.9, 4.9, 5.9, 6.9, 33]
+
+    bin_labels = [3, 4, 5, 6, 32]
+
+    df['total_rooms_bin'] = pd.cut(df['total_rooms'], bins = bin_bound, labels = bin_labels)
+    
     return df

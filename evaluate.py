@@ -1,3 +1,8 @@
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+
 def plot_residuals(df, actual, resids):
 
     sns.scatterplot(data = df, x = actual, y = resids)
