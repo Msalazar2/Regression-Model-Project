@@ -178,6 +178,7 @@ def spear_test(df, continuous, continuous2):
     r, p = stats.spearmanr(df[continuous], df[continuous2])
 
     print('a = .05')
+    print(f'r = {r}')
     print(f'p = {p}')
     
     print('')
